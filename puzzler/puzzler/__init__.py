@@ -348,6 +348,7 @@ class SessionState(object):
                 state_file.close()
                 if not read_only:
                     state.init_state_file(path)
+                state.lock = threading.Lock()
                 return state
             elif read_only:
                 print >>sys.stderr, (
