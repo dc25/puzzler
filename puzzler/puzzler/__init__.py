@@ -61,6 +61,13 @@ exact_cover_modules = {
 algorithm_choices = ('x2', 'dlx',)
 
 try:
+    from puzzler import exact_cover_cxx
+    exact_cover_modules['cxx'] = exact_cover_cxx
+    algorithm_choices = ('cxx',) + algorithm_choices
+except ImportError:
+    pass
+
+try:
     from puzzler import exact_cover_c
     exact_cover_modules['c'] = exact_cover_c
     algorithm_choices = ('c',) + algorithm_choices
@@ -213,7 +220,7 @@ def solve(puzzle_class, output_stream, settings):
                 output_stream.flush()
                 solver.load_matrix(*matrices[i])
                 for solution in solver.solve():
-                    state.save(solver)
+                    state.save(solver, solution=solution)
                     if not puzzle.record_solution(solution, solver,
                                                   stream=output_stream):
                         continue
@@ -239,7 +246,6 @@ def solve(puzzle_class, output_stream, settings):
                 state.completed_components.add(puzzle.__class__.__name__)
         except KeyboardInterrupt:
             print >>output_stream, 'Session interrupted by user.'
-            state.save(solver, final=True)
             state.close()
             sys.exit(1)
     finally:
@@ -303,7 +309,7 @@ class SessionState(object):
         del odict['state_file'], odict['lock']
         return odict
 
-    def save(self, solver, final=False):
+    def save(self, solver, solution=None, final=False):
         if self.state_file and self.lock.acquire(final):
             # GIL check interval hack (r512, to prevent corrupted state
             # results) doesn't work, see
@@ -312,6 +318,10 @@ class SessionState(object):
             #sys.setcheckinterval(sys.maxint)
             self.num_solutions = solver.num_solutions
             self.num_searches = solver.num_searches
+            if solution == None:
+                self.solution = solver.getState()
+            else:
+                self.solution = solution
             self.state_file.seek(0)
             pickle.dump(self, self.state_file, 2)
             self.state_file.flush()

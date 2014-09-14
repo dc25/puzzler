@@ -135,6 +135,9 @@ class ExactCover(object):
                     column.size += 1
                     last = datum
 
+    def getState(self):
+        return self.solution
+
     def solve(self, level=0):
         """A generator that produces all solutions: Algorithm X.."""
         if self.root.right is self.root:
